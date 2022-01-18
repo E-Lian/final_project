@@ -16,22 +16,24 @@ SCREEN_WIDTH = 1920
 SCREEN_HEIGHT = 1080
 SCREEN_SIZE = (SCREEN_WIDTH, SCREEN_HEIGHT)
 WINDOW_TITLE = "Spider-Man: Going Home"
+bg = pygame.image.load("./images/background/sky.png")
+
 
 # I drew each image in Photoshop first
 # then edit the position of them in Premiere Pro and export each frame to images folder
-# there are psd and png files of the images I drew
+# there are psd and png files of the images I drew in ./some files/hand/
 # also there is a gif of the animation
 images = [
-    pygame.image.load("./images/hand1.png"), pygame.image.load("./images/hand2.png"),
-    pygame.image.load("./images/hand3.png"),
-    pygame.image.load("./images/hand4.png"), pygame.image.load("./images/hand5.png"),
-    pygame.image.load("./images/hand6.png"),
-    pygame.image.load("./images/hand7.png"), pygame.image.load("./images/hand8.png"),
-    pygame.image.load("./images/hand9.png"),
-    pygame.image.load("./images/hand10.png"), pygame.image.load("./images/hand11.png"),
-    pygame.image.load("./images/hand12.png"),
-    pygame.image.load("./images/hand13.png"), pygame.image.load("./images/hand14.png"),
-    pygame.image.load("./images/hand15.png")
+    pygame.image.load("./images/hand/hand1.png"), pygame.image.load("./images/hand/hand2.png"),
+    pygame.image.load("./images/hand/hand3.png"),
+    pygame.image.load("./images/hand/hand4.png"), pygame.image.load("./images/hand/hand5.png"),
+    pygame.image.load("./images/hand/hand6.png"),
+    pygame.image.load("./images/hand/hand7.png"), pygame.image.load("./images/hand/hand8.png"),
+    pygame.image.load("./images/hand/hand9.png"),
+    pygame.image.load("./images/hand/hand10.png"), pygame.image.load("./images/hand/hand11.png"),
+    pygame.image.load("./images/hand/hand12.png"),
+    pygame.image.load("./images/hand/hand13.png"), pygame.image.load("./images/hand/hand14.png"),
+    pygame.image.load("./images/hand/hand15.png")
 ]
 
 
@@ -86,7 +88,7 @@ def main() -> None:
         # ----------- CHANGE ENVIRONMENT
 
         # ----------- DRAW THE ENVIRONMENT
-        screen.fill(BGCOLOUR)  # fill with bgcolor
+        screen.blit(bg, (0, 0))  # fill with bgcolor
 
         # draw sprites
         # if player is swinging, draw
