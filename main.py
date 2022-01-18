@@ -10,17 +10,28 @@ RED = (255, 0, 0)
 GREEN = (0, 255, 0)
 BLUE = (0, 0, 255)
 BGCOLOUR = BLACK
-FPS = 30
+FPS = 15
 
 SCREEN_WIDTH = 1920
 SCREEN_HEIGHT = 1080
 SCREEN_SIZE = (SCREEN_WIDTH, SCREEN_HEIGHT)
 WINDOW_TITLE = "Spider-Man: Going Home"
 
+# I drew each image in Photoshop first
+# then edit the position of them in Premiere Pro and export each frame to images folder
+# there are psd and png files of the images I drew
+# also there is a gif of the animation
 images = [
-    "./images/hand1.png", "./images/hand2.png", "./images/hand3.png", "./images/hand4.png", "./images/hand5.png",
-    "./images/hand6.png", "./images/hand7.png", "./images/hand8.png", "./images/hand9.png", "./images/hand10.png",
-    "./images/hand11.png", "./images/hand12.png", "./images/hand13.png", "./images/hand14.png", "./images/hand15.png"
+    pygame.image.load("./images/hand1.png"), pygame.image.load("./images/hand2.png"),
+    pygame.image.load("./images/hand3.png"),
+    pygame.image.load("./images/hand4.png"), pygame.image.load("./images/hand5.png"),
+    pygame.image.load("./images/hand6.png"),
+    pygame.image.load("./images/hand7.png"), pygame.image.load("./images/hand8.png"),
+    pygame.image.load("./images/hand9.png"),
+    pygame.image.load("./images/hand10.png"), pygame.image.load("./images/hand11.png"),
+    pygame.image.load("./images/hand12.png"),
+    pygame.image.load("./images/hand13.png"), pygame.image.load("./images/hand14.png"),
+    pygame.image.load("./images/hand15.png")
 ]
 
 
@@ -31,15 +42,18 @@ class Player(pygame.sprite.Sprite):
 
         # Create the image of the block
         self.images = images
-        self.index = 0
+        self.index = -1
         self.image = self.images[self.index]
         self.rect = self.image.get_rect()
 
-    def update(self):
+    def swing(self) -> bool:
         if self.index >= len(self.images):
-            self.index = 0
+            # return False if player is not swinging
+            # else return True and update the image
+            return False
         self.image = self.images[self.index]
         self.index += 1
+        return True
 
 
 def main() -> None:
@@ -53,10 +67,10 @@ def main() -> None:
     clock = pygame.time.Clock()
 
     # sprite group
-    all_sprites = pygame.sprite.Group()
+    player_sprites = pygame.sprite.Group()
     # create player and add to group
     player = Player()
-    all_sprites.add(player)
+    player_sprites.add(player)
 
     # ----------- MAIN LOOP
     while not done:
@@ -64,15 +78,20 @@ def main() -> None:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 done = True
+        # Listen for the space bar on keyboard
+        # set player to first image
+        if pygame.key.get_pressed()[pygame.K_SPACE]:
+            player.index = 0
 
         # ----------- CHANGE ENVIRONMENT
-        # update
-        all_sprites.update()
+
         # ----------- DRAW THE ENVIRONMENT
         screen.fill(BGCOLOUR)  # fill with bgcolor
 
         # draw sprites
-        all_sprites.draw(screen)
+        # if player is swinging, draw
+        if player.swing():
+            player_sprites.draw(screen)
 
         # Update the screen
         pygame.display.flip()
