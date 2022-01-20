@@ -10,6 +10,7 @@ pygame.init()
 BLACK = (0, 0, 0)
 BG_COLOR = BLACK
 FPS = 15
+WAIT = 5
 
 SCREEN_WIDTH = 1920
 SCREEN_HEIGHT = 1080
@@ -39,13 +40,16 @@ images = [
 
 buildings = [
     pygame.image.load("./images/background/building1.png"), pygame.image.load("./images/background/building2.png"),
-    pygame.image.load("./images/background/building3.png")
+    pygame.image.load("./images/background/building3.png"), pygame.image.load("./images/background/building4.png"),
+    pygame.image.load("./images/background/building5.png")
 ]
 
 
 class Player(pygame.sprite.Sprite):
     """
     attributes:
+        status: current status of the player
+        start: the time player starts swinging
         images: each frame of the animation
         index: number of the current frame
         image: current image
@@ -58,6 +62,8 @@ class Player(pygame.sprite.Sprite):
         # Call the superclass constructor
         super().__init__()
 
+        self.status = "falling"
+        self.start = None
         # Create the image of the block
         self.images = images
         self.index = -1
@@ -71,14 +77,18 @@ class Player(pygame.sprite.Sprite):
         2.  swing() will tell the loop if player is swinging,
             if not, swing() will return False,
             otherwise return True and update frame
-        3. when swing() returns True, animation will be drawn
+        3. when swing() returns True, frame will be updated and animation will be drawn
         """
         if self.index >= len(self.images):
             # return False if player is not swinging or finish swinging
             # else return True and update the image
+            self.status = "falling"
             return False
         self.image = self.images[self.index]
         self.index += 1
+        now = pygame.time.get_ticks()
+        if now - self.start >= WAIT:
+            self.status = "swinging"
         return True
 
 
@@ -90,6 +100,7 @@ class Building(pygame.sprite.Sprite):
         rect.x, rect.y: a random location
 
     methods:
+        change_vel: change buildings' velocities
         update: move the building, change self.image and xy if it is out of the screen
     """
 
@@ -97,31 +108,41 @@ class Building(pygame.sprite.Sprite):
         # call the superclass constructor
         super().__init__()
 
-        self.v = 10
+        self.v = 0
         self.index = -1
         # image
         self.image = image
+        self.image = pygame.transform.scale2x(self.image)
         self.rect = self.image.get_rect()
         # assign random location
         self.rect.x, self.rect.y = (
-            random.randrange(SCREEN_WIDTH),
-            random.randrange(600, SCREEN_HEIGHT - 100)
+            random.randrange(SCREEN_WIDTH - 100),
+            random.randrange(400, SCREEN_HEIGHT - 100)
         )
 
-    def update(self):
+    def change_vel(self, status: str):
+        """change velocity as player press key bars"""
+        if status == "falling":
+            self.v = -10
+        elif status == "swinging":
+            self.v = 20
+
+    def update(self, player: str):
         """
         buildings keep going down (y increases)
-        if buildings are out of screen, then change self.image to a random building
-        and appear after 1 - 3 seconds at another random location
+        if buildings are out of screen, then appear after 1 - 3 seconds at another random location
+
+        attribute:
+            player: a string that represents player's status for change_vel()
         """
+        self.change_vel(player)
         self.rect.y += self.v
         # if the building is out of the screen
         if self.rect.top > SCREEN_HEIGHT:
-            self.index = random.randrange(len(buildings))
             self.image = buildings[self.index]
             self.rect.x, self.rect.y = (
                 random.randrange(SCREEN_WIDTH),
-                random.randrange(600, SCREEN_HEIGHT - 100)
+                random.randrange(300, SCREEN_HEIGHT - 100)
             )
 
 
@@ -139,6 +160,7 @@ def main() -> None:
     player_sprites = pygame.sprite.Group()
     # create player and add to group
     player = Player()
+    player.start = pygame.time.get_ticks()
     player_sprites.add(player)
 
     # background group
@@ -158,10 +180,11 @@ def main() -> None:
         # set player to first image
         if pygame.key.get_pressed()[pygame.K_SPACE]:
             player.index = 0
+            player.start = pygame.time.get_ticks()
 
         # ----------- CHANGE ENVIRONMENT
         # update the buildings' locations
-        building_sprites.update()
+        building_sprites.update(player.status)
         # ----------- DRAW THE ENVIRONMENT
         screen.blit(bg, (0, 0))  # draw background
 
