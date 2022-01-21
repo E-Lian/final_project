@@ -10,15 +10,16 @@ pygame.init()
 BLACK = (0, 0, 0)
 BG_COLOR = BLACK
 FPS = 15
-WAIT = 5
+WAIT = 10
 
 SCREEN_WIDTH = 1920
 SCREEN_HEIGHT = 1080
 SCREEN_SIZE = (SCREEN_WIDTH, SCREEN_HEIGHT)
 WINDOW_TITLE = "Spider-Man: Going Home"
 bg = pygame.image.load("./images/background/sky.png")
-
 bg = pygame.transform.scale(bg, (1920, 1080))
+bg2 = pygame.image.load("./images/background/bg buildings.png")
+bg2 = pygame.transform.scale(bg2, (1920, 1080))
 
 # I drew each frame in Photoshop first
 # then edit the position of them in Premiere Pro so that it looks smoother
@@ -41,7 +42,7 @@ images = [
 buildings = [
     pygame.image.load("./images/background/building1.png"), pygame.image.load("./images/background/building2.png"),
     pygame.image.load("./images/background/building3.png"), pygame.image.load("./images/background/building4.png"),
-    pygame.image.load("./images/background/building5.png")
+    pygame.image.load("./images/background/building5.png"), pygame.image.load("./images/background/building6.png")
 ]
 
 
@@ -117,7 +118,7 @@ class Building(pygame.sprite.Sprite):
         # assign random location
         self.rect.x, self.rect.y = (
             random.randrange(SCREEN_WIDTH - 100),
-            random.randrange(400, SCREEN_HEIGHT - 100)
+            random.randrange(SCREEN_HEIGHT - self.rect.height, SCREEN_HEIGHT - 100)
         )
 
     def change_vel(self, status: str):
@@ -139,10 +140,9 @@ class Building(pygame.sprite.Sprite):
         self.rect.y += self.v
         # if the building is out of the screen
         if self.rect.top > SCREEN_HEIGHT:
-            self.image = buildings[self.index]
             self.rect.x, self.rect.y = (
                 random.randrange(SCREEN_WIDTH),
-                random.randrange(300, SCREEN_HEIGHT - 100)
+                random.randrange(SCREEN_HEIGHT - self.rect.height, SCREEN_HEIGHT - 100)
             )
 
 
@@ -169,6 +169,9 @@ def main() -> None:
     for building in buildings:
         b = Building(building)
         building_sprites.add(b)
+        building_sprites.add(b)
+        building_sprites.add(b)
+        building_sprites.add(b)
 
     # ----------- MAIN LOOP
     while not done:
@@ -187,6 +190,7 @@ def main() -> None:
         building_sprites.update(player.status)
         # ----------- DRAW THE ENVIRONMENT
         screen.blit(bg, (0, 0))  # draw background
+        screen.blit(bg2, (0, 100))
 
         # draw sprites
         # draw buildings
