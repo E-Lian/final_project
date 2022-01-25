@@ -211,6 +211,11 @@ class Bomb(pygame.sprite.Sprite):
         self.image = BOMB
         self.rect = self.image.get_rect()
         self.rect.x, self.rect.y = x, y
+        self.width, self.height = self.rect.width, self.rect.height
+
+    def update(self) -> None:
+        # TODO: finish update method
+        self.image = pygame.transform.scale(self.image, (self.width + 50, self.height + 50))
 
 
 def main() -> None:
