@@ -18,8 +18,9 @@ SCREEN_SIZE = (SCREEN_WIDTH, SCREEN_HEIGHT)
 WINDOW_TITLE = "Spider-Man: Going Home"
 bg = pygame.image.load("./images/background/sky.png")
 bg = pygame.transform.scale(bg, (1920, 1080))
-bg2 = pygame.image.load("./images/background/bg buildings.png")
-bg2 = pygame.transform.scale(bg2, (1920, 1080))
+GOBLIN = pygame.image.load("./images/green goblin/green goblin.png")
+BOMB = pygame.image.load("./images/green goblin/bomb.png")
+HIT = pygame.image.load("./images/green goblin/bomb_hit.png")
 
 # I drew each frame in Photoshop first
 # then edit the position of them in Premiere Pro so that it looks smoother
@@ -39,11 +40,7 @@ images = [
     pygame.image.load("./images/hand/hand15.png")
 ]
 
-buildings = [
-    pygame.image.load("./images/background/building1.png"), pygame.image.load("./images/background/building2.png"),
-    pygame.image.load("./images/background/building3.png"), pygame.image.load("./images/background/building4.png"),
-    pygame.image.load("./images/background/building5.png"), pygame.image.load("./images/background/building6.png")
-]
+buildings = pygame.image.load("./images/background/bg buildings.png")
 
 
 class Player(pygame.sprite.Sprite):
@@ -110,16 +107,11 @@ class Building(pygame.sprite.Sprite):
         super().__init__()
 
         self.v = 0
-        self.index = -1
         # image
         self.image = image
-        self.image = pygame.transform.scale2x(self.image)
         self.rect = self.image.get_rect()
         # assign random location
-        self.rect.x, self.rect.y = (
-            random.randrange(SCREEN_WIDTH - 100),
-            random.randrange(SCREEN_HEIGHT - self.rect.height, SCREEN_HEIGHT - 100)
-        )
+        self.rect.x, self.rect.y = 0, 0
 
     def change_vel(self, status: str):
         """change velocity as player press key bars"""
@@ -131,7 +123,6 @@ class Building(pygame.sprite.Sprite):
     def update(self, player: str):
         """
         buildings keep going down (y increases)
-        if buildings are out of screen, then appear after 1 - 3 seconds at another random location
 
         attribute:
             player: a string that represents player's status for change_vel()
@@ -139,11 +130,87 @@ class Building(pygame.sprite.Sprite):
         self.change_vel(player)
         self.rect.y += self.v
         # if the building is out of the screen
-        if self.rect.top > SCREEN_HEIGHT:
-            self.rect.x, self.rect.y = (
-                random.randrange(SCREEN_WIDTH),
-                random.randrange(SCREEN_HEIGHT - self.rect.height, SCREEN_HEIGHT - 100)
-            )
+        # if self.rect.top > SCREEN_HEIGHT:
+        #     self.rect.x, self.rect.y = (
+        #         random.randrange(SCREEN_WIDTH),
+        #         random.randrange(SCREEN_HEIGHT - self.rect.height, SCREEN_HEIGHT - 100)
+        #     )
+
+
+class Goblin(pygame.sprite.Sprite):
+    """the green goblin
+    attributes:
+        image: image of the green goblin
+
+    methods:
+        update: update location and shoot bomb
+        shoot_bomb: shoot a bomb
+    """
+
+    def __init__(self, x_vel, y_vel) -> None:
+        # call the superclass constructor
+        super().__init__()
+
+        self.x_vel = x_vel
+        self.y_vel = y_vel
+        # load image
+        self.image = GOBLIN
+        self.rect = self.image.get_rect()
+
+    def shoot_bomb(self):
+        # create a Bomb
+        bomb = Bomb(self.rect.x, self.rect.y)
+        return bomb
+
+    def update(self) -> None:
+        # Update the x-coordinate
+        self.rect.x += self.x_vel
+        # If goblin is too far to the left
+        if self.rect.x < 0:
+            # Keep the object inside the canvas
+            self.rect.x = 0
+            # Set the velocity to the negative
+            self.x_vel = -self.x_vel
+        # If goblin is too far to the right
+        if self.rect.x + self.rect.width > SCREEN_WIDTH:
+            # Keep the object inside the canvas
+            self.rect.x = SCREEN_WIDTH - self.rect.width
+            # Set the velocity to the negative
+            self.x_vel = -self.x_vel
+        # If goblin is too far to the bottom
+        if self.rect.y + self.rect.height > SCREEN_HEIGHT:
+            # Keep the object inside the canvas
+            self.rect.y = SCREEN_HEIGHT - self.rect.height
+            # Set the velocity to the negative
+            self.y_vel = -self.y_vel
+        # If goblin is too far to the bottom
+        if self.rect.y < 0:
+            # Keep the object inside the canvas
+            self.rect.y = 0
+            # Set the velocity to the negative
+            self.y_vel = -self.y_vel
+
+        # Update the y-coordinate
+        self.rect.y += self.y_vel
+
+
+class Bomb(pygame.sprite.Sprite):
+    """green goblin's bomb
+    attributes:
+
+    methods:
+        update: update location and change image if needed
+    """
+
+    def __init__(self, x, y) -> None:
+        # call superclass constructor
+        super().__init__()
+
+        self.hit = False
+        # load image
+        self.image = BOMB
+        self.rect = self.image.get_rect()
+        self.rect.x, self.rect.y = x, y
 
 
 def main() -> None:
@@ -163,15 +230,15 @@ def main() -> None:
     player.start = pygame.time.get_ticks()
     player_sprites.add(player)
 
+    # enemy sprite group
+    enemy_sprites = pygame.sprite.Group()
+    goblin = Goblin(random.randrange(-30,30), random.randrange(-30, 30))
+    enemy_sprites.add(goblin)
+
     # background group
     building_sprites = pygame.sprite.Group()
     # add building sprites in the group
-    for building in buildings:
-        b = Building(building)
-        building_sprites.add(b)
-        building_sprites.add(b)
-        building_sprites.add(b)
-        building_sprites.add(b)
+    building_sprites.add(Building(buildings))
 
     # ----------- MAIN LOOP
     while not done:
@@ -186,15 +253,18 @@ def main() -> None:
             player.start = pygame.time.get_ticks()
 
         # ----------- CHANGE ENVIRONMENT
-        # update the buildings' locations
+        # update sprites
         building_sprites.update(player.status)
+        enemy_sprites.update()
         # ----------- DRAW THE ENVIRONMENT
         screen.blit(bg, (0, 0))  # draw background
-        screen.blit(bg2, (0, 100))
 
         # draw sprites
         # draw buildings
         building_sprites.draw(screen)
+
+        # draw enemies
+        enemy_sprites.draw(screen)
 
         # if player is swinging, draw
         if player.swing():
