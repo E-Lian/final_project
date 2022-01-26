@@ -1,5 +1,4 @@
 # Spider-Man: Going Home (weird name, but I like it)
-# TODO: figure out how to make spider-man move according to his action
 
 import random
 
@@ -7,17 +6,20 @@ import pygame
 
 pygame.init()
 
-BLACK = (0, 0, 0)
-BG_COLOR = BLACK
 FPS = 15
 WAIT = 10
+BOMB_WAIT = 5000
 
 SCREEN_WIDTH = 1920
 SCREEN_HEIGHT = 1080
 SCREEN_SIZE = (SCREEN_WIDTH, SCREEN_HEIGHT)
 WINDOW_TITLE = "Spider-Man: Going Home"
+
+# the background
 bg = pygame.image.load("./images/background/sky.png")
 bg = pygame.transform.scale(bg, (1920, 1080))
+
+# a bunch of enemy images
 GOBLIN = pygame.image.load("./images/green goblin/green goblin.png")
 BOMB = pygame.image.load("./images/green goblin/bomb.png")
 HIT = pygame.image.load("./images/green goblin/bomb_hit.png")
@@ -54,6 +56,7 @@ class Player(pygame.sprite.Sprite):
 
     methods:
         swing: update self.image to play the animation
+        TODO: shooting webs to bombs - draw webs, make it move, and change the bomb's image
     """
 
     def __init__(self) -> None:
@@ -100,6 +103,7 @@ class Building(pygame.sprite.Sprite):
     methods:
         change_vel: change buildings' velocities
         update: move the building, change self.image and xy if it is out of the screen
+    TODO: need to adjust the picture
     """
 
     def __init__(self, image) -> None:
@@ -140,6 +144,8 @@ class Building(pygame.sprite.Sprite):
 class Goblin(pygame.sprite.Sprite):
     """the green goblin
     attributes:
+        x_vel: velocity in x-axis
+        y_vel: velocity in y-axis
         image: image of the green goblin
 
     methods:
@@ -151,15 +157,16 @@ class Goblin(pygame.sprite.Sprite):
         # call the superclass constructor
         super().__init__()
 
+        self.start = pygame.time.get_ticks()
         self.x_vel = x_vel
         self.y_vel = y_vel
         # load image
-        self.image = GOBLIN
+        self.image = pygame.transform.scale(GOBLIN, (700, 700))
         self.rect = self.image.get_rect()
 
     def shoot_bomb(self):
         # create a Bomb
-        bomb = Bomb(self.rect.x, self.rect.y)
+        bomb = Bomb(self.rect.centerx, self.rect.centery)
         return bomb
 
     def update(self) -> None:
@@ -197,9 +204,11 @@ class Goblin(pygame.sprite.Sprite):
 class Bomb(pygame.sprite.Sprite):
     """green goblin's bomb
     attributes:
-
+        width: width of  the sprite
+        height: height of the sprite
     methods:
         update: update location and change image if needed
+    TODO: make the bomb explosible
     """
 
     def __init__(self, x, y) -> None:
@@ -207,15 +216,16 @@ class Bomb(pygame.sprite.Sprite):
         super().__init__()
 
         self.hit = False
+        self.size = 500
         # load image
-        self.image = BOMB
+        self.image = pygame.transform.scale(BOMB, (self.size, self.size))
         self.rect = self.image.get_rect()
         self.rect.x, self.rect.y = x, y
         self.width, self.height = self.rect.width, self.rect.height
 
     def update(self) -> None:
-        # TODO: finish update method
-        self.image = pygame.transform.scale(self.image, (self.width + 50, self.height + 50))
+        self.size += 50
+        self.image = pygame.transform.scale(self.image, (self.size, self.size))
 
 
 def main() -> None:
@@ -237,7 +247,7 @@ def main() -> None:
 
     # enemy sprite group
     enemy_sprites = pygame.sprite.Group()
-    goblin = Goblin(random.randrange(-30,30), random.randrange(-30, 30))
+    goblin = Goblin(random.randrange(-30, 30), random.randrange(-30, 30))
     enemy_sprites.add(goblin)
 
     # background group
@@ -261,13 +271,18 @@ def main() -> None:
         # update sprites
         building_sprites.update(player.status)
         enemy_sprites.update()
+        # shoot bomb
+        now = pygame.time.get_ticks()
+        if now - goblin.start >= BOMB_WAIT:
+            bomb = goblin.shoot_bomb()
+            enemy_sprites.add(bomb)
+            goblin.start = pygame.time.get_ticks()
         # ----------- DRAW THE ENVIRONMENT
         screen.blit(bg, (0, 0))  # draw background
 
         # draw sprites
         # draw buildings
         building_sprites.draw(screen)
-
         # draw enemies
         enemy_sprites.draw(screen)
 
