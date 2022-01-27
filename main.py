@@ -51,6 +51,7 @@ shoot = pygame.image.load("./images/hand/shooting.png")
 WEB = pygame.image.load("./images/web.png")
 
 # hp
+HP = 3
 hearts = [
     pygame.image.load("./images/heart/heart1.png"), pygame.image.load("./images/heart/heart2.png"),
     pygame.image.load("./images/heart/heart3.png"), pygame.image.load("./images/heart/heart4.png")
@@ -211,6 +212,7 @@ class Bomb(pygame.sprite.Sprite):
     """green goblin's bomb
     attributes:
         hit: if the bomb is hit
+        exploded: if the bomb has already exploded
         size: size of the bomb
         width: width of  the sprite
         height: height of the sprite
@@ -224,6 +226,7 @@ class Bomb(pygame.sprite.Sprite):
 
         self.hit = False
         self.size = 300
+        self.exploded = False
         # load image
         self.image = pygame.transform.scale(BOMB, (self.size, self.size))
         self.rect = self.image.get_rect()
@@ -231,16 +234,20 @@ class Bomb(pygame.sprite.Sprite):
         self.width, self.height = self.rect.width, self.rect.height
 
     def update(self) -> None:
+        global HP
         # if the bomb explode
-        if self.size >= 2000:
+        if self.size >= 1000:
             self.image = EXPLODE
+            if not self.exploded:
+                HP -= 1
+                self.exploded = True
         elif self.hit:
             self.rect.y += 500
         else:
             self.size += 50
             self.image = pygame.transform.scale(self.image, (self.size, self.size))
-            self.rect.x -= 60
-            self.rect.y -= 60
+            self.rect.x -= 50
+            self.rect.y -= 50
 
         if self.rect.top >= SCREEN_HEIGHT:
             self.kill()
@@ -319,7 +326,6 @@ def main() -> None:
 
     # game status
     status = "ongoing"
-    hp = 3
 
     # sprite groups
     # player sprite group
@@ -389,12 +395,7 @@ def main() -> None:
                 bomb_sprites.add(bomb)
                 goblin.start = pygame.time.get_ticks()
 
-        # if the bomb explode
-        for bomb in bomb_sprites:
-            if bomb.image == EXPLODE:
-                hp -= 1
-                break
-        if hp == 0:
+        if HP == 0:
             status = "end"
         # if spider-man hits the ground
         if building.rect.bottom <= SCREEN_HEIGHT:
@@ -435,11 +436,11 @@ def main() -> None:
             hand_sprites.draw(screen)
             web_sprites.draw(screen)
 
-        if hp == 3:
+        if HP == 3:
             screen.blit(hearts[0], (1800, 20))
-        elif hp == 2:
+        elif HP == 2:
             screen.blit(hearts[1], (1800, 20))
-        elif hp == 1:
+        elif HP == 1:
             screen.blit(hearts[2], (1800, 20))
         else:
             screen.blit(hearts[3], (1800, 20))
