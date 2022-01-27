@@ -18,11 +18,13 @@ WINDOW_TITLE = "Spider-Man: Going Home"
 # the background
 bg = pygame.image.load("./images/background/sky.png")
 bg = pygame.transform.scale(bg, (1920, 1080))
+over = pygame.image.load("./images/game over.png")
 
 # a bunch of enemy images
 GOBLIN = pygame.image.load("./images/green goblin/green goblin.png")
 BOMB = pygame.image.load("./images/green goblin/bomb.png")
 HIT = pygame.image.load("./images/green goblin/bomb_hit.png")
+EXPLODE = pygame.image.load("./images/green goblin/explode.png")
 
 # I drew each frame in Photoshop first
 # then edit the position of them in Premiere Pro so that it looks smoother
@@ -98,7 +100,6 @@ class Building(pygame.sprite.Sprite):
     attributes:
         v: velocity of the building
         image: image of the building
-        rect.x, rect.y: a random location
 
     methods:
         change_vel: change buildings' velocities
@@ -144,6 +145,7 @@ class Building(pygame.sprite.Sprite):
 class Goblin(pygame.sprite.Sprite):
     """the green goblin
     attributes:
+        start: the time when a bomb is shot
         x_vel: velocity in x-axis
         y_vel: velocity in y-axis
         image: image of the green goblin
@@ -163,11 +165,6 @@ class Goblin(pygame.sprite.Sprite):
         # load image
         self.image = pygame.transform.scale(GOBLIN, (700, 700))
         self.rect = self.image.get_rect()
-
-    def shoot_bomb(self):
-        # create a Bomb
-        bomb = Bomb(self.rect.centerx, self.rect.centery)
-        return bomb
 
     def update(self) -> None:
         # Update the x-coordinate
@@ -200,15 +197,21 @@ class Goblin(pygame.sprite.Sprite):
         # Update the y-coordinate
         self.rect.y += self.y_vel
 
+    def shoot_bomb(self):
+        # create a Bomb
+        bomb = Bomb(self.rect.centerx, self.rect.centery)
+        return bomb
+
 
 class Bomb(pygame.sprite.Sprite):
     """green goblin's bomb
     attributes:
+        hit: if the bomb is hit
+        size: size of the bomb
         width: width of  the sprite
         height: height of the sprite
     methods:
         update: update location and change image if needed
-    TODO: make the bomb explosible
     """
 
     def __init__(self, x, y) -> None:
@@ -224,8 +227,17 @@ class Bomb(pygame.sprite.Sprite):
         self.width, self.height = self.rect.width, self.rect.height
 
     def update(self) -> None:
-        self.size += 50
-        self.image = pygame.transform.scale(self.image, (self.size, self.size))
+        # if the bomb explode
+        if self.size >= 2000:
+            self.image = EXPLODE
+        elif self.hit:
+            self.image = HIT
+            self.kill()
+        else:
+            self.size += 50
+            self.image = pygame.transform.scale(self.image, (self.size, self.size))
+            self.rect.x -= 60
+            self.rect.y -= 60
 
 
 def main() -> None:
@@ -238,6 +250,9 @@ def main() -> None:
     done = False
     clock = pygame.time.Clock()
 
+    # game status
+    status = "ongoing"
+
     # sprite group
     player_sprites = pygame.sprite.Group()
     # create player and add to group
@@ -249,6 +264,9 @@ def main() -> None:
     enemy_sprites = pygame.sprite.Group()
     goblin = Goblin(random.randrange(-30, 30), random.randrange(-30, 30))
     enemy_sprites.add(goblin)
+
+    # bomb sprite group
+    bomb_sprites = pygame.sprite.Group()
 
     # background group
     building_sprites = pygame.sprite.Group()
@@ -263,20 +281,26 @@ def main() -> None:
                 done = True
         # Listen for the space bar on keyboard
         # set player to first image
-        if pygame.key.get_pressed()[pygame.K_SPACE]:
+        if pygame.key.get_pressed()[pygame.K_SPACE] and status != "end":
             player.index = 0
             player.start = pygame.time.get_ticks()
 
         # ----------- CHANGE ENVIRONMENT
-        # update sprites
-        building_sprites.update(player.status)
-        enemy_sprites.update()
-        # shoot bomb
-        now = pygame.time.get_ticks()
-        if now - goblin.start >= BOMB_WAIT:
-            bomb = goblin.shoot_bomb()
-            enemy_sprites.add(bomb)
-            goblin.start = pygame.time.get_ticks()
+        if status != "end":
+            # update sprites
+            building_sprites.update(player.status)
+            enemy_sprites.update()
+            bomb_sprites.update()
+            # shoot bomb
+            now = pygame.time.get_ticks()
+            if now - goblin.start >= BOMB_WAIT:
+                bomb = goblin.shoot_bomb()
+                bomb_sprites.add(bomb)
+                goblin.start = pygame.time.get_ticks()
+
+        for bomb in bomb_sprites:
+            if bomb.image == EXPLODE:
+                status = "end"
         # ----------- DRAW THE ENVIRONMENT
         screen.blit(bg, (0, 0))  # draw background
 
@@ -286,9 +310,16 @@ def main() -> None:
         # draw enemies
         enemy_sprites.draw(screen)
 
+        # draw bombs
+        bomb_sprites.draw(screen)
+
         # if player is swinging, draw
         if player.swing():
             player_sprites.draw(screen)
+
+        # if game has ended, draw
+        if status == "end":
+            screen.blit(over, (0, 0))
 
         # Update the screen
         pygame.display.flip()
