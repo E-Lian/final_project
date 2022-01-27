@@ -19,6 +19,7 @@ WINDOW_TITLE = "Spider-Man: Going Home"
 bg = pygame.image.load("./images/background/sky.png")
 bg = pygame.transform.scale(bg, (1920, 1080))
 over = pygame.image.load("./images/game over.png")
+gravity = pygame.image.load("./images/gravity.png")
 
 # a bunch of enemy images
 GOBLIN = pygame.image.load("./images/green goblin/green goblin.png")
@@ -29,7 +30,7 @@ EXPLODE = pygame.image.load("./images/green goblin/explode.png")
 # I drew each frame in Photoshop first
 # then edit the position of them in Premiere Pro so that it looks smoother
 # lastly export each frame to images folder
-# there are some files I drew in ./psd files/hand/
+# there are psd files I drew in ./psd files/hand/
 # also there is a gif of the animation
 images = [
     pygame.image.load("./images/hand/hand1.png"), pygame.image.load("./images/hand/hand2.png"),
@@ -104,7 +105,6 @@ class Building(pygame.sprite.Sprite):
     methods:
         change_vel: change buildings' velocities
         update: move the building, change self.image and xy if it is out of the screen
-    TODO: need to adjust the picture
     """
 
     def __init__(self, image) -> None:
@@ -134,12 +134,6 @@ class Building(pygame.sprite.Sprite):
         """
         self.change_vel(player)
         self.rect.y += self.v
-        # if the building is out of the screen
-        # if self.rect.top > SCREEN_HEIGHT:
-        #     self.rect.x, self.rect.y = (
-        #         random.randrange(SCREEN_WIDTH),
-        #         random.randrange(SCREEN_HEIGHT - self.rect.height, SCREEN_HEIGHT - 100)
-        #     )
 
 
 class Goblin(pygame.sprite.Sprite):
@@ -271,7 +265,8 @@ def main() -> None:
     # background group
     building_sprites = pygame.sprite.Group()
     # add building sprites in the group
-    building_sprites.add(Building(buildings))
+    building = Building(buildings)
+    building_sprites.add(building)
 
     # ----------- MAIN LOOP
     while not done:
@@ -286,7 +281,7 @@ def main() -> None:
             player.start = pygame.time.get_ticks()
 
         # ----------- CHANGE ENVIRONMENT
-        if status != "end":
+        if status == "ongoing":
             # update sprites
             building_sprites.update(player.status)
             enemy_sprites.update()
@@ -298,9 +293,13 @@ def main() -> None:
                 bomb_sprites.add(bomb)
                 goblin.start = pygame.time.get_ticks()
 
+        # if the bomb explode
         for bomb in bomb_sprites:
             if bomb.image == EXPLODE:
                 status = "end"
+        # if spider-man hits the ground
+        if building.rect.bottom <= SCREEN_HEIGHT:
+            status = "fall"
         # ----------- DRAW THE ENVIRONMENT
         screen.blit(bg, (0, 0))  # draw background
 
@@ -320,6 +319,9 @@ def main() -> None:
         # if game has ended, draw
         if status == "end":
             screen.blit(over, (0, 0))
+
+        if status == "fall":
+            screen.blit(gravity, (0, 0))
 
         # Update the screen
         pygame.display.flip()
