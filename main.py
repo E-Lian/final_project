@@ -1,4 +1,4 @@
-# Spider-Man: Going Home (weird name, but I like it)
+# Spider-Man: Going Home (weird name that has no connection to the gameplay, but I like it)
 
 import random
 
@@ -15,9 +15,11 @@ SCREEN_HEIGHT = 1080
 SCREEN_SIZE = (SCREEN_WIDTH, SCREEN_HEIGHT)
 WINDOW_TITLE = "Spider-Man: Going Home"
 
-# the background
+# Images
+# game
 bg = pygame.image.load("./images/background/sky.png")
 bg = pygame.transform.scale(bg, (1920, 1080))
+buildings = pygame.image.load("./images/background/bg buildings.png")
 over = pygame.image.load("./images/game over.png")
 gravity = pygame.image.load("./images/gravity.png")
 
@@ -27,6 +29,7 @@ BOMB = pygame.image.load("./images/green goblin/bomb.png")
 HIT = pygame.image.load("./images/green goblin/bomb_hit.png")
 EXPLODE = pygame.image.load("./images/green goblin/explode.png")
 
+# Spider-Man's images
 # I drew each frame in Photoshop first
 # then edit the position of them in Premiere Pro so that it looks smoother
 # lastly export each frame to images folder
@@ -44,8 +47,8 @@ images = [
     pygame.image.load("./images/hand/hand13.png"), pygame.image.load("./images/hand/hand14.png"),
     pygame.image.load("./images/hand/hand15.png")
 ]
-
-buildings = pygame.image.load("./images/background/bg buildings.png")
+shoot = pygame.image.load("./images/hand/shooting.png")
+WEB = pygame.image.load("./images/web.png")
 
 
 class Player(pygame.sprite.Sprite):
@@ -213,7 +216,7 @@ class Bomb(pygame.sprite.Sprite):
         super().__init__()
 
         self.hit = False
-        self.size = 500
+        self.size = 300
         # load image
         self.image = pygame.transform.scale(BOMB, (self.size, self.size))
         self.rect = self.image.get_rect()
@@ -225,13 +228,76 @@ class Bomb(pygame.sprite.Sprite):
         if self.size >= 2000:
             self.image = EXPLODE
         elif self.hit:
-            self.image = HIT
-            self.kill()
+            self.rect.y += 100
         else:
             self.size += 50
             self.image = pygame.transform.scale(self.image, (self.size, self.size))
             self.rect.x -= 60
             self.rect.y -= 60
+
+        if self.rect.top >= SCREEN_HEIGHT:
+            self.kill()
+
+
+class Hand(pygame.sprite.Sprite):
+    """shooting hand
+    attributes:
+        shooting: True when player is press S key
+        start: the time when player press S key
+    methods:
+        shoot: tell the loop is player is shooting
+    """
+
+    def __init__(self):
+        # call super class constructor
+        super().__init__()
+
+        # other attributes
+        self.image = shoot
+        self.rect = self.image.get_rect()
+        self.shooting = False
+        self.make_web = False
+        self.start = None
+
+    def shoot(self) -> bool:
+        now = pygame.time.get_ticks()
+        if now - self.start >= 100:
+            self.shooting = False
+            self.make_web = True
+            return False
+        else:
+            self.make_web = False
+
+        if self.shooting:
+            return True
+        return True
+
+
+class Web(pygame.sprite.Sprite):
+    """Spider-Man's web
+    attributes:
+        x_vel: velocity on x-axis
+        y_vel: velocity on y-axis
+    methods:
+        update: move the web, if it is out of screen, kill it
+    """
+
+    def __init__(self):
+        # call super class constructor
+        super().__init__()
+
+        # other attributes
+        self.image = WEB
+        self.rect = self.image.get_rect()
+        self.rect.x, self.rect.y = 1300, 550
+        self.x_vel = -100
+        self.y_vel = -100
+
+    def update(self):
+        self.rect.x += self.x_vel
+        self.rect.y += self.y_vel
+        if self.rect.top <= -300:
+            self.kill()
 
 
 def main() -> None:
@@ -246,13 +312,21 @@ def main() -> None:
 
     # game status
     status = "ongoing"
+    hp = 3
 
-    # sprite group
+    # sprite groups
+    # player sprite group
     player_sprites = pygame.sprite.Group()
     # create player and add to group
     player = Player()
     player.start = pygame.time.get_ticks()
     player_sprites.add(player)
+
+    # hand groups
+    hand_sprites = pygame.sprite.Group()
+    hand = Hand()
+    hand.start = pygame.time.get_ticks()
+    hand_sprites.add(hand)
 
     # enemy sprite group
     enemy_sprites = pygame.sprite.Group()
@@ -268,6 +342,9 @@ def main() -> None:
     building = Building(buildings)
     building_sprites.add(building)
 
+    # web sprite group
+    web_sprites = pygame.sprite.Group()
+
     # ----------- MAIN LOOP
     while not done:
         # ----------- EVENT LISTENER
@@ -280,13 +357,25 @@ def main() -> None:
             player.index = 0
             player.start = pygame.time.get_ticks()
 
+        # listen for s key on keyboard
+        if pygame.key.get_pressed()[pygame.K_s] and status != "end":
+            # change hand.shooting and set start time
+            hand.shooting = True
+            hand.start = pygame.time.get_ticks()
+            # shoot web
+            if hand.make_web:
+                web = Web()
+                web_sprites.add(web)
+
         # ----------- CHANGE ENVIRONMENT
         if status == "ongoing":
             # update sprites
             building_sprites.update(player.status)
             enemy_sprites.update()
             bomb_sprites.update()
-            # shoot bomb
+            web_sprites.update()
+
+            # goblin shoot bomb
             now = pygame.time.get_ticks()
             if now - goblin.start >= BOMB_WAIT:
                 bomb = goblin.shoot_bomb()
@@ -296,10 +385,19 @@ def main() -> None:
         # if the bomb explode
         for bomb in bomb_sprites:
             if bomb.image == EXPLODE:
-                status = "end"
+                hp -= 1
         # if spider-man hits the ground
         if building.rect.bottom <= SCREEN_HEIGHT:
             status = "fall"
+
+
+        # bomb hit
+        for bomb in bomb_sprites:
+            webs_hit = pygame.sprite.spritecollide(bomb, web_sprites, True)
+            if webs_hit:
+                bomb.hit = True
+                bomb.image = HIT
+
         # ----------- DRAW THE ENVIRONMENT
         screen.blit(bg, (0, 0))  # draw background
 
@@ -322,6 +420,11 @@ def main() -> None:
 
         if status == "fall":
             screen.blit(gravity, (0, 0))
+
+        # if spider-man is shooting webs
+        if hand.shoot():
+            hand_sprites.draw(screen)
+            web_sprites.draw(screen)
 
         # Update the screen
         pygame.display.flip()
