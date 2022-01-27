@@ -50,6 +50,14 @@ images = [
 shoot = pygame.image.load("./images/hand/shooting.png")
 WEB = pygame.image.load("./images/web.png")
 
+# hp
+hearts = [
+    pygame.image.load("./images/heart/heart1.png"), pygame.image.load("./images/heart/heart2.png"),
+    pygame.image.load("./images/heart/heart3.png"), pygame.image.load("./images/heart/heart4.png")
+]
+for i in range(len(hearts)):
+    hearts[i] = pygame.transform.scale(hearts[i], (100, 100))
+
 
 class Player(pygame.sprite.Sprite):
     """
@@ -62,7 +70,6 @@ class Player(pygame.sprite.Sprite):
 
     methods:
         swing: update self.image to play the animation
-        TODO: shooting webs to bombs - draw webs, make it move, and change the bomb's image
     """
 
     def __init__(self) -> None:
@@ -228,7 +235,7 @@ class Bomb(pygame.sprite.Sprite):
         if self.size >= 2000:
             self.image = EXPLODE
         elif self.hit:
-            self.rect.y += 100
+            self.rect.y += 500
         else:
             self.size += 50
             self.image = pygame.transform.scale(self.image, (self.size, self.size))
@@ -386,10 +393,12 @@ def main() -> None:
         for bomb in bomb_sprites:
             if bomb.image == EXPLODE:
                 hp -= 1
+                break
+        if hp == 0:
+            status = "end"
         # if spider-man hits the ground
         if building.rect.bottom <= SCREEN_HEIGHT:
             status = "fall"
-
 
         # bomb hit
         for bomb in bomb_sprites:
@@ -426,6 +435,14 @@ def main() -> None:
             hand_sprites.draw(screen)
             web_sprites.draw(screen)
 
+        if hp == 3:
+            screen.blit(hearts[0], (1800, 20))
+        elif hp == 2:
+            screen.blit(hearts[1], (1800, 20))
+        elif hp == 1:
+            screen.blit(hearts[2], (1800, 20))
+        else:
+            screen.blit(hearts[3], (1800, 20))
         # Update the screen
         pygame.display.flip()
 
